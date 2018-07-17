@@ -1,12 +1,14 @@
 package com.example.joelwasserman.androidbletutorial;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -20,6 +22,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -30,8 +33,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.UUID;
 
 //toDo  : See BLE Scanner , BLE Peripheral Simulator , BLE Too from Google Play Store  to simulate Ble communication
 public class MainActivity extends AppCompatActivity {
@@ -39,14 +44,20 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private final static String WIKO_NAME = "View";
-    BluetoothManager btManager;
-    BluetoothAdapter btAdapter;
-    BluetoothLeScanner btScanner;
-    Button startScanningButton;
-    Button stopScanningButton;
-    TextView peripheralTextView;
-    ScanFilter scanFilter;
-    ScanSettings scanSettings;
+    private final static String SERVICE_1 = "00001801-0000-1000-8000-00805f9b34fb";
+    private final static String SERVICE_2 = "00001800-0000-1000-8000-00805f9b34fb";
+    private final static String SERVICE_3 = "0000fff0-0000-1000-8000-00805f9b34fb";
+
+    private BluetoothManager btManager;
+    private BluetoothAdapter btAdapter;
+    private BluetoothLeScanner btScanner;
+    private Button startScanningButton;
+    private Button stopScanningButton;
+    private TextView peripheralTextView;
+    private ScanFilter scanFilter;
+    private ScanSettings scanSettings;
+
+
     BluetoothDevice bluetoothDevice = null;
     BluetoothGatt mBluetoothGatt ;
 
@@ -82,14 +93,46 @@ public class MainActivity extends AppCompatActivity {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.e("OnScanResultTag", " onServicesDiscovered ==> GATT_SUCCESS ");
-
-                for (BluetoothGattService bluetoothGattService : gatt.getServices()){
-                    Log.i("OnScanResultTag", " bluetoothGattService  =>  "+bluetoothGattService.getUuid());
-                }
+                displayServicesUuid(gatt) ;
             } else {
                 Log.w("OnScanResultTag", "onServicesDiscovered received: " + status);
             }
 
+        }
+
+
+
+        private void displayServicesUuid(BluetoothGatt gatt){
+            Log.i("OnScanResultTag", "\n **** Gatt  of "+gatt.getDevice().getAddress()+" *****") ;
+
+            for (BluetoothGattService bluetoothGattService : gatt.getServices()){
+                displayCharacteristicUuid(bluetoothGattService) ;
+                Log.i("OnScanResultTag", " bluetoothGattService  =>  "+bluetoothGattService.getUuid());
+            }
+        }
+
+        private void displayCharacteristicUuid(BluetoothGattService bluetoothGattService){
+            Log.i("OnScanResultTag", "\n **** Characteristics of  service  "+bluetoothGattService.getUuid()+" *****") ;
+
+            for (BluetoothGattCharacteristic Characteris : bluetoothGattService.getCharacteristics()){
+                Log.e("OnScanResultTag", " **** Characteris  =>  property = "+Characteris.getProperties()
+                +" getPermissions = "+Characteris.getPermissions()
+                        +" getWriteType = "+Characteris.getWriteType()
+                        +" getValue = "+Characteris.getValue());
+                displayDescriptors(Characteris);
+                break;
+            }
+        }
+
+        private void displayDescriptors(BluetoothGattCharacteristic bluetoothGattCharacteristic){
+            Log.i("OnScanResultTag", "\n **** descriptors of  BluetoothGattCharacteristic "+bluetoothGattCharacteristic.getUuid()+" *****") ;
+
+            for (BluetoothGattDescriptor descriptor : bluetoothGattCharacteristic.getDescriptors()){
+                Log.i("OnScanResultTag", " **** descriptor  ***** =>  uuid  = "+descriptor.getUuid()
+                        +",  value = "+ descriptor.getValue());
+                activateNotifWrite(bluetoothGattCharacteristic, descriptor.getUuid()) ;
+
+            }
         }
 
         @Override
@@ -190,18 +233,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Make sure we have access coarse location enabled, if not, prompt the user to enable it
-        if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("This app needs location access");
-            builder.setMessage("Please grant location access so this app can detect peripherals.");
-            builder.setPositiveButton(android.R.string.ok, null);
-            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
-                }
-            });
-            builder.show();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("This app needs location access");
+                builder.setMessage("Please grant location access so this app can detect peripherals.");
+                builder.setPositiveButton(android.R.string.ok, null);
+                builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @TargetApi(Build.VERSION_CODES.M)
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+                    }
+                });
+                builder.show();
+            }
         }
     }
 
@@ -280,4 +326,17 @@ public class MainActivity extends AppCompatActivity {
      07-13 17:09:18.275 22255-22268/com.example.joelwasserman.androidbletutorial I/OnScanResultTag:  bluetoothGattService  =>  0000fff0-0000-1000-8000-00805f9b34fb
      */
 
+    private void activateNotifCharac(BluetoothGattCharacteristic characteristic){
+        mBluetoothGatt.setCharacteristicNotification(characteristic, true) ;
+        mBluetoothGatt.readCharacteristic(characteristic);
+
+    }
+
+    private void activateNotifWrite(BluetoothGattCharacteristic characteristic, UUID uuid){
+        BluetoothGattDescriptor clientConfig = characteristic.getDescriptor(uuid);
+        clientConfig.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+
+            //clientConfig.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        mBluetoothGatt.writeDescriptor(clientConfig);
+    }
 }
