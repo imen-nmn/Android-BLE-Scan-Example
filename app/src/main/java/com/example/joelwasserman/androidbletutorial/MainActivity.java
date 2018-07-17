@@ -24,8 +24,6 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -47,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private final static String SERVICE_1 = "00001801-0000-1000-8000-00805f9b34fb";
     private final static String SERVICE_2 = "00001800-0000-1000-8000-00805f9b34fb";
     private final static String SERVICE_3 = "0000fff0-0000-1000-8000-00805f9b34fb";
+    private final static String CHARATERISTIC_4 = "0000fff4-0000-1000-8000-00805f9b34fb";
 
     private BluetoothManager btManager;
     private BluetoothAdapter btAdapter;
@@ -58,20 +57,19 @@ public class MainActivity extends AppCompatActivity {
     private ScanSettings scanSettings;
 
 
-    BluetoothDevice bluetoothDevice = null;
-    BluetoothGatt mBluetoothGatt ;
-
+    private BluetoothDevice bluetoothDevice = null;
+    private BluetoothGatt mBluetoothGatt = null;
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
 
-            Log.i("OnScanResultTag", " onConnectionStateChange "+newState);
+            Log.i("OnScanResultTag", " onConnectionStateChange " + newState);
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_CONNECTED ");
 
-                gatt.discoverServices() ;
+                gatt.discoverServices();
                 //Discover services when Gatt is connected
 //                bleHandler.obtainMessage(MSG_DISCOVER_SERVICES, gatt).sendToTarget();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -93,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.e("OnScanResultTag", " onServicesDiscovered ==> GATT_SUCCESS ");
-                displayServicesUuid(gatt) ;
+                displayServicesUuid(gatt, SERVICE_3);
             } else {
                 Log.w("OnScanResultTag", "onServicesDiscovered received: " + status);
             }
@@ -101,45 +99,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
-        private void displayServicesUuid(BluetoothGatt gatt){
-            Log.i("OnScanResultTag", "\n **** Gatt  of "+gatt.getDevice().getAddress()+" *****") ;
-
-            for (BluetoothGattService bluetoothGattService : gatt.getServices()){
-                displayCharacteristicUuid(bluetoothGattService) ;
-                Log.i("OnScanResultTag", " bluetoothGattService  =>  "+bluetoothGattService.getUuid());
-            }
-        }
-
-        private void displayCharacteristicUuid(BluetoothGattService bluetoothGattService){
-            Log.i("OnScanResultTag", "\n **** Characteristics of  service  "+bluetoothGattService.getUuid()+" *****") ;
-
-            for (BluetoothGattCharacteristic Characteris : bluetoothGattService.getCharacteristics()){
-                Log.e("OnScanResultTag", " **** Characteris  =>  property = "+Characteris.getProperties()
-                +" getPermissions = "+Characteris.getPermissions()
-                        +" getWriteType = "+Characteris.getWriteType()
-                        +" getValue = "+Characteris.getValue());
-                displayDescriptors(Characteris);
-                break;
-            }
-        }
-
-        private void displayDescriptors(BluetoothGattCharacteristic bluetoothGattCharacteristic){
-            Log.i("OnScanResultTag", "\n **** descriptors of  BluetoothGattCharacteristic "+bluetoothGattCharacteristic.getUuid()+" *****") ;
-
-            for (BluetoothGattDescriptor descriptor : bluetoothGattCharacteristic.getDescriptors()){
-                Log.i("OnScanResultTag", " **** descriptor  ***** =>  uuid  = "+descriptor.getUuid()
-                        +",  value = "+ descriptor.getValue());
-                activateNotifWrite(bluetoothGattCharacteristic, descriptor.getUuid()) ;
-
-            }
-        }
-
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            Log.i("OnScanResultTag", " onCharacteristicRead ");
+            Log.i("OnScanResultTag", "____________________ onCharacteristicRead __________________");
+            displayCharacteristic(characteristic);
 
+        }
+
+        @Override
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorRead(gatt, descriptor, status);
+            Log.i("OnScanResultTag", "/____________________ onDescriptorRead __________________/");
+            displayDescriptor(descriptor);
         }
 
         @Override
@@ -155,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("OnScanResultTag", " onCharacteristicChanged ");
 
         }
-    } ;
+    };
     // Device scan callback.
     private ScanCallback leScanCallback = new ScanCallback() {
         @Override
@@ -163,8 +135,9 @@ public class MainActivity extends AppCompatActivity {
             Log.e("OnScanResultTag", " callbackType " + callbackType + ", result =  " + result);
 
             if (result.getDevice() != bluetoothDevice && result.getDevice().getName() != null) {
-                bluetoothDevice = result.getDevice() ;
-                peripheralTextView.append(new Date() + " :\n Found Device Address: " + bluetoothDevice.getAddress() + " uuid: " + bluetoothDevice.getName() + "\n");
+                bluetoothDevice = result.getDevice();
+                peripheralTextView.append(new Date() + " :\n Found Device Address: " + bluetoothDevice.getAddress()
+                        + " uuid: " + bluetoothDevice.getName() + "\n");
 
                 stopScanning();
 
@@ -308,14 +281,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void connectToPeripheral(BluetoothDevice device) {
         //Always use false on auto-connect parameter
-        mBluetoothGatt= device.connectGatt(this, false, mGattCallback);
+        mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
     }
 
 
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         super.onDestroy();
-        if(mBluetoothGatt!= null)
+        if (mBluetoothGatt != null)
             mBluetoothGatt.disconnect();
     }
 
@@ -326,17 +299,80 @@ public class MainActivity extends AppCompatActivity {
      07-13 17:09:18.275 22255-22268/com.example.joelwasserman.androidbletutorial I/OnScanResultTag:  bluetoothGattService  =>  0000fff0-0000-1000-8000-00805f9b34fb
      */
 
-    private void activateNotifCharac(BluetoothGattCharacteristic characteristic){
-        mBluetoothGatt.setCharacteristicNotification(characteristic, true) ;
+    private void activateNotifCharac(BluetoothGattCharacteristic characteristic) {
+        mBluetoothGatt.setCharacteristicNotification(characteristic, true);
         mBluetoothGatt.readCharacteristic(characteristic);
 
     }
 
-    private void activateNotifWrite(BluetoothGattCharacteristic characteristic, UUID uuid){
+    private void activateNotifWrite(BluetoothGattCharacteristic characteristic, UUID uuid) {
         BluetoothGattDescriptor clientConfig = characteristic.getDescriptor(uuid);
         clientConfig.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 
-            //clientConfig.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        //clientConfig.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
         mBluetoothGatt.writeDescriptor(clientConfig);
     }
+
+    private void displayALLServices(BluetoothGatt gatt) {
+        Log.i("OnScanResultTag", "\n **** Gatt  of " + gatt.getDevice().getAddress() + " *****");
+        for (BluetoothGattService bluetoothGattService : gatt.getServices()) {
+            displayCharacteristicUuid(bluetoothGattService);
+            Log.i("OnScanResultTag", " bluetoothGattService  =>  " + bluetoothGattService.getUuid());
+        }
+    }
+
+    private void displayCharacteristicUuid(BluetoothGattService bluetoothGattService) {
+        Log.i("OnScanResultTag", "\n **** Characteristics of  service  " + bluetoothGattService.getUuid() + " *****");
+
+        for (BluetoothGattCharacteristic Characteris : bluetoothGattService.getCharacteristics()) {
+            Log.e("OnScanResultTag", " **** Characteris  =>  property = " + Characteris.getProperties()
+                    + " getPermissions = " + Characteris.getPermissions()
+                    + " getWriteType = " + Characteris.getWriteType()
+                    + " getValue = " + Characteris.getValue());
+            displayDescriptors(Characteris);
+            break;
+        }
+    }
+
+    private void displayDescriptors(BluetoothGattCharacteristic bluetoothGattCharacteristic) {
+        Log.i("OnScanResultTag", "\n **** descriptors of  BluetoothGattCharacteristic " + bluetoothGattCharacteristic.getUuid() + " *****");
+
+        for (BluetoothGattDescriptor descriptor : bluetoothGattCharacteristic.getDescriptors()) {
+            Log.i("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
+                    + ",  value = " + descriptor.getValue());
+//                activateNotifWrite(bluetoothGattCharacteristic, descriptor.getUuid()) ;
+
+            mBluetoothGatt.readDescriptor(descriptor);
+
+        }
+    }
+
+    private void displayServicesUuid(BluetoothGatt gatt, String uuidStr) {
+        Log.i("OnScanResultTag", "\n **** Gatt  of " + gatt.getDevice().getAddress() + " *****");
+        BluetoothGattService service = gatt.getService(UUID.fromString(uuidStr));
+        BluetoothGattCharacteristic Characteris = service.getCharacteristic(UUID.fromString(CHARATERISTIC_4));
+        gatt.readCharacteristic(Characteris);
+
+    }
+
+    private void displayCharacteristic(BluetoothGattCharacteristic Characteris) {
+        Log.i("OnScanResultTag", "\n **** Display  Characteristics  " + Characteris.getUuid() + " *****");
+        Log.e("OnScanResultTag", " **** property = " + Characteris.getProperties()
+                + " **** value = " + Arrays.toString(Characteris.getValue())
+                + " getPermissions = " + Characteris.getPermissions());
+
+        displayDescriptors(Characteris);
+    }
+
+    private void displayDescriptor(BluetoothGattDescriptor descriptor) {
+        Log.i("OnScanResultTag", "\n **** displayDescriptor  " + descriptor.getUuid() + " *****");
+        Log.i("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
+                + ",  value = " + Arrays.toString(descriptor.getValue()));
+        String hexStringValue = StringHelpers.bytesToHex(descriptor.getValue());
+        Log.e("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
+                + ",  value = " + hexStringValue);
+
+    }
+
+
 }
