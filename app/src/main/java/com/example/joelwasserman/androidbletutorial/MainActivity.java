@@ -41,7 +41,9 @@ import java.util.UUID;
 
 import static com.example.joelwasserman.androidbletutorial.StringHelpers.hexStringToString;
 
-//toDo  : See BLE Scanner , BLE Peripheral Simulator , BLE Too from Google Play Store  to simulate Ble communication
+//toDo  : In this sample I used BLE Tool App to simulate Ble sensor (Gatt server)
+//you can see also BLE Scanner , BLE Peripheral Simulator app in the store
+
 public class MainActivity extends AppCompatActivity {
 
     private final static int REQUEST_ENABLE_BT = 1;
