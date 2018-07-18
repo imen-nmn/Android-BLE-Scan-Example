@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private ScanFilter scanFilter;
     private ScanSettings scanSettings;
 
-    private EditText editText ;
+    private EditText editText;
 
     private BluetoothDevice bluetoothDevice = null;
     private BluetoothGatt mBluetoothGatt = null;
@@ -112,12 +112,16 @@ public class MainActivity extends AppCompatActivity {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_CONNECTED ");
+                enableEdit(true);
+
                 appendTv("STATE_CONNECTED");
 
                 gatt.discoverServices();
                 //Discover services when Gatt is connected
 //                bleHandler.obtainMessage(MSG_DISCOVER_SERVICES, gatt).sendToTarget();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                enableEdit(false);
+
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_DISCONNECTED ");
                 appendTv("STATE_DISCONNECTED");
                 stopScanning();
@@ -137,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 appendTv("GATT_SUCCESS");
+                enableEdit(true);
 
                 Log.e("OnScanResultTag", " onServicesDiscovered ==> GATT_SUCCESS ");
                 displayServicesUuid(gatt, SERVICE_3);
@@ -150,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            String log = "\"____________________ onCharacteristicRead __________________\"";
-            appendTv("onCharacteristicRead");
+            String log = "\n____________________ onCharacteristicRead __________________";
+            appendTv("onCharacteristicRead ");
             Log.i("OnScanResultTag", log);
             displayCharacteristic(characteristic);
 
@@ -170,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
             Log.i("OnScanResultTag", " onCharacteristicWrite ");
-            appendTv("__________onCharacteristicWrite_____________");
+            appendTv("onCharacteristicWrite");
             displayCharacteristic(characteristic);
 
         }
@@ -178,10 +183,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
-            appendTv("onCharacteristicChanged");
-            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(DESCRIPTOR_NOTIFY)) ;
+            appendTv(" onCharacteristicChanged " + StringHelpers.byteToString(characteristic.getValue()));
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(DESCRIPTOR_NOTIFY));
             displayDescriptor(descriptor);
-
             Log.i("OnScanResultTag", " onCharacteristicChanged ");
 
         }
@@ -211,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
         stopScanningButton.setVisibility(View.INVISIBLE);
 
         editText = (EditText) findViewById(R.id.editText);
+        enableEdit(false);
         editText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -293,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void startScanning() {
         System.out.println("start scanning");
-        peripheralTextView.setText("start scanning");
+        peripheralTextView.setText("Start scanning...\n");
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
@@ -310,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScanning() {
         System.out.println("stopping scanning");
-        peripheralTextView.append("\n Stopped Scanning...");
+        appendTv("Stopped Scanning...");
         startScanningButton.setVisibility(View.VISIBLE);
         stopScanningButton.setVisibility(View.INVISIBLE);
         AsyncTask.execute(new Runnable() {
@@ -386,11 +391,11 @@ public class MainActivity extends AppCompatActivity {
 
 //            appendTv(" **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
 //                    + ",  value = " + descriptor.getValue());
-            if(descriptor.getUuid().equals(UUID.fromString(DESCRIPTOR_NOTIFY)))
+            if (descriptor.getUuid().equals(UUID.fromString(DESCRIPTOR_NOTIFY)))
 //            mBluetoothGatt.readDescriptor(descriptor);
                 enableCharacteristicNotification(mBluetoothGatt,
                         bluetoothGattCharacteristic,
-                        true) ;
+                        true);
 
         }
     }
@@ -401,9 +406,9 @@ public class MainActivity extends AppCompatActivity {
         BluetoothGattCharacteristic characteris = service.getCharacteristic(UUID.fromString(CHARATERISTIC_4));
         gatt.readCharacteristic(characteris);
 
-//        enableCharacteristicNotification(gatt,
-//                Characteris,
-//                true);
+        enableCharacteristicNotification(gatt,
+                characteris,
+                true);
 //        displayDescriptors(Characteris);
     }
 
@@ -413,13 +418,11 @@ public class MainActivity extends AppCompatActivity {
                 + "**** value = " + Arrays.toString(Characteris.getValue())
                 + "**** getPermissions = " + Characteris.getPermissions());
 
-        String log = "\n____________________________\n"
-                +"\n**** Display  Characteristics: uuid = " + Characteris.getUuid() + " *****"
+        String log = "\n**** Display  Characteristics: uuid = " + Characteris.getUuid() + " *****"
                 + " \n**** property = " + StringHelpers.fromDecimalToBinary(Characteris.getProperties())
                 + "\n**** value = " + Arrays.toString(Characteris.getValue())
                 + "\n**** StringValue = " + StringHelpers.byteToString(Characteris.getValue())
-                + "\n**** getPermissions = " + Characteris.getPermissions()
-                +"\n____________________________\n" ;
+                + "\n**** getPermissions = " + Characteris.getPermissions();
         appendTv(log);
         displayDescriptors(Characteris);
     }
@@ -434,10 +437,12 @@ public class MainActivity extends AppCompatActivity {
         Log.e("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
                 + ",  value = " + hexStringValue);
 
-        String log = "\n**** Display Descriptor: uuid = " + descriptor.getUuid() + " *****"
+        String log = "\n____________________________\n"
+                + "\n**** Display DESCRIPTOR : uuid = " + descriptor.getUuid() + " *****"
                 + "\n**** value bytes = " + Arrays.toString(descriptor.getValue())
                 + "\n**** hexStringValue " + hexStringValue
-                + "\n**** StringValue " + hexStringToString(hexStringValue) ;
+                + "\n**** StringValue " + hexStringToString(hexStringValue)
+                + "\n____________________________\n";
         appendTv(log);
 
     }
@@ -456,11 +461,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void enableEdit(final boolean enable) {
+        editText.post(new Runnable() {
+            @Override
+            public void run() {
+                editText.setEnabled(enable);
+            }
+        });
+    }
+
 
     public boolean enableCharacteristicNotification(BluetoothGatt bluetoothGatt,
-                                                 BluetoothGattCharacteristic characteristic,
-                                                 boolean enable) {
-        appendTv("**** setCharacteristicNotification **** ");
+                                                    BluetoothGattCharacteristic characteristic,
+                                                    boolean enable) {
+        appendTv("\n**** enableCharacteristicNotification  ****  ==> " + enable);
         bluetoothGatt.setCharacteristicNotification(characteristic, enable);
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(DESCRIPTOR_NOTIFY));
         descriptor.setValue(enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : new byte[]{0x00, 0x00});
@@ -468,10 +482,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void writeCharacteristic(String value){
+    public void writeCharacteristic(String value) {
         BluetoothGattService service = mBluetoothGatt.getService(UUID.fromString(SERVICE_3));
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(CHARATERISTIC_4));
-        characteristic.setValue(value) ;
+        characteristic.setValue(value);
 //        characteristic.setValue(2, BluetoothGattCharacteristic.FORMAT_UINT8, 0) ; // bytes
         mBluetoothGatt.writeCharacteristic(characteristic);
     }
@@ -479,8 +493,8 @@ public class MainActivity extends AppCompatActivity {
     /**
      *
      * I/OnScanResultTag:  **** descriptors of  BluetoothGattCharacteristic 0000fff4-0000-1000-8000-00805f9b34fb *****
-       I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002904-0000-1000-8000-00805f9b34fb,  value = null
-       I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002902-0000-1000-8000-00805f9b34fb,  value = null
-       I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002901-0000-1000-8000-00805f9b34fb,  value = null
+     I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002904-0000-1000-8000-00805f9b34fb,  value = null
+     I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002902-0000-1000-8000-00805f9b34fb,  value = null
+     I/OnScanResultTag:  **** descriptor  ***** =>  uuid  = 00002901-0000-1000-8000-00805f9b34fb,  value = null
      **/
 }
