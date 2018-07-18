@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_DISCONNECTED ");
                 appendTv("STATE_DISCONNECTED");
-
+                stopScanning();
 //                bleHandler.obtainMessage(MSG_GATT_DISCONNECTED, gatt).sendToTarget();
             } else {
                 Log.e("OnScanResultTag", " onConnectionStateChange ==> ERROR ");
@@ -310,12 +310,6 @@ public class MainActivity extends AppCompatActivity {
         stopScanning();
     }
 
-
-    /***
-     * 07-13 17:09:18.275 22255-22268/com.example.joelwasserman.androidbletutorial I/OnScanResultTag:  bluetoothGattService  =>  00001801-0000-1000-8000-00805f9b34fb
-     07-13 17:09:18.275 22255-22268/com.example.joelwasserman.androidbletutorial I/OnScanResultTag:  bluetoothGattService  =>  00001800-0000-1000-8000-00805f9b34fb
-     07-13 17:09:18.275 22255-22268/com.example.joelwasserman.androidbletutorial I/OnScanResultTag:  bluetoothGattService  =>  0000fff0-0000-1000-8000-00805f9b34fb
-     */
 
     private void activateNotifCharac(BluetoothGattCharacteristic characteristic) {
         mBluetoothGatt.setCharacteristicNotification(characteristic, true);
