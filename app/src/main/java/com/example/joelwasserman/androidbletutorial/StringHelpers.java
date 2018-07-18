@@ -1,5 +1,6 @@
 package com.example.joelwasserman.androidbletutorial;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -138,5 +139,26 @@ public class StringHelpers {
             result[i/2] = (byte) Integer.parseInt(curr.toString(), 16);
         }
         return result;
+    }
+
+    public static  String hexStringToString(String txtInHex){
+        byte [] txtInByte = new byte [txtInHex.length() / 2];
+        int j = 0;
+        for (int i = 0; i < txtInHex.length(); i += 2)
+        {
+            txtInByte[j++] = Byte.parseByte(txtInHex.substring(i, i + 2), 16);
+        }
+        return new String(txtInByte);
+    }
+
+    public static  String byteToString(byte [] byteArray){
+        String value = "error decoding data" ;
+        try {
+             value = new String(byteArray, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        return value;
     }
 }

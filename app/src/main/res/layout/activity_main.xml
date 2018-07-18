@@ -12,7 +12,8 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello Bluetooth Scanners!" />
+        android:text="Hello Bluetooth Scanners!"
+        android:id="@+id/textView" />
 
     <Button
         android:layout_width="100dp"
@@ -35,5 +36,16 @@
         android:id="@+id/PeripheralTextView"
         android:scrollbars="vertical"
         android:maxLines="30" />
+
+    <EditText
+        android:id="@+id/editText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/StopScanButton"
+        android:layout_toEndOf="@+id/textView"
+        android:maxEms="10"
+        android:inputType="textPersonName"
+        android:imeOptions="actionDone"
+        android:hint="Write" />
 
 </RelativeLayout>
