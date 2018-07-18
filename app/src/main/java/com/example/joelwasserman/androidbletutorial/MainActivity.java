@@ -148,13 +148,13 @@ public class MainActivity extends AppCompatActivity {
 
             if (result.getDevice() != bluetoothDevice && result.getDevice().getName() != null) {
                 bluetoothDevice = result.getDevice();
+                stopScanning();
 
                 String deviceLog = new Date() + " :\n Found Device Address: " + bluetoothDevice.getAddress()
                         + " uuid: " + bluetoothDevice.getName() + "\n" ;
 
                 appendTv(deviceLog) ;
 
-                stopScanning();
 
                 connectToPeripheral(bluetoothDevice);
 //                // auto scroll for text view
@@ -284,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScanning() {
         System.out.println("stopping scanning");
-        peripheralTextView.append("Stopped Scanning");
+        peripheralTextView.append("\n Stopped Scanning...");
         startScanningButton.setVisibility(View.VISIBLE);
         stopScanningButton.setVisibility(View.INVISIBLE);
         AsyncTask.execute(new Runnable() {
@@ -307,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (mBluetoothGatt != null)
             mBluetoothGatt.disconnect();
+        stopScanning();
     }
 
 
