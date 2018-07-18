@@ -115,7 +115,16 @@ public class StringHelpers {
 
     final protected static char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
+    static String hexToBinary(String hex) {
+        int i = Integer.parseInt(hex, 16);
+        String bin = Integer.toBinaryString(i);
+        return bin;
+    }
 
+    public static String fromDecimalToBinary(int decimal){
+       String bin = String.format("%8s", Integer.toBinaryString(decimal)).replace(' ', '0') ;
+       return bin;
+    }
 
     public static byte[] fromHexString(final String encoded) {
         if ((encoded.length() % 2) != 0)

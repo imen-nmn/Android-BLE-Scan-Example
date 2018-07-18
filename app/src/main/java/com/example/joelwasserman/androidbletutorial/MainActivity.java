@@ -66,14 +66,17 @@ public class MainActivity extends AppCompatActivity {
 
             Log.i("OnScanResultTag", " onConnectionStateChange " + newState);
 
+
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_CONNECTED ");
+                appendTv("STATE_CONNECTED");
 
                 gatt.discoverServices();
                 //Discover services when Gatt is connected
 //                bleHandler.obtainMessage(MSG_DISCOVER_SERVICES, gatt).sendToTarget();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i("OnScanResultTag", " onConnectionStateChange ==> STATE_DISCONNECTED ");
+                appendTv("STATE_DISCONNECTED");
 
 //                bleHandler.obtainMessage(MSG_GATT_DISCONNECTED, gatt).sendToTarget();
             } else {
@@ -90,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
             super.onServicesDiscovered(gatt, status);
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                appendTv("GATT_SUCCESS");
+
                 Log.e("OnScanResultTag", " onServicesDiscovered ==> GATT_SUCCESS ");
                 displayServicesUuid(gatt, SERVICE_3);
             } else {
@@ -102,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            Log.i("OnScanResultTag", "____________________ onCharacteristicRead __________________");
+            String log = "\"____________________ onCharacteristicRead __________________\"" ;
+            appendTv("onCharacteristicRead");
+            Log.i("OnScanResultTag", log);
             displayCharacteristic(characteristic);
 
         }
@@ -110,7 +117,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorRead(gatt, descriptor, status);
-            Log.i("OnScanResultTag", "/____________________ onDescriptorRead __________________/");
+            String log = "\"/____________________ onDescriptorRead __________________/\"" ;
+            appendTv("onDescriptorRead");
+            Log.i("OnScanResultTag", log);
             displayDescriptor(descriptor);
         }
 
@@ -118,12 +127,15 @@ public class MainActivity extends AppCompatActivity {
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
             Log.i("OnScanResultTag", " onCharacteristicWrite ");
+            appendTv("onCharacteristicWrite");
 
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
+            appendTv("onCharacteristicChanged");
+
             Log.i("OnScanResultTag", " onCharacteristicChanged ");
 
         }
@@ -136,8 +148,11 @@ public class MainActivity extends AppCompatActivity {
 
             if (result.getDevice() != bluetoothDevice && result.getDevice().getName() != null) {
                 bluetoothDevice = result.getDevice();
-                peripheralTextView.append(new Date() + " :\n Found Device Address: " + bluetoothDevice.getAddress()
-                        + " uuid: " + bluetoothDevice.getName() + "\n");
+
+                String deviceLog = new Date() + " :\n Found Device Address: " + bluetoothDevice.getAddress()
+                        + " uuid: " + bluetoothDevice.getName() + "\n" ;
+
+                appendTv(deviceLog) ;
 
                 stopScanning();
 
@@ -252,14 +267,16 @@ public class MainActivity extends AppCompatActivity {
 
     public void startScanning() {
         System.out.println("start scanning");
-        peripheralTextView.setText("");
+        peripheralTextView.setText("start scanning");
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
 
-                btScanner.startScan(Collections.singletonList(scanFilter), scanSettings, leScanCallback);
+                btScanner.startScan(Collections.singletonList(scanFilter),
+                        scanSettings,
+                        leScanCallback);
 //                btScanner.startScan(leScanCallback);
             }
         });
@@ -325,10 +342,14 @@ public class MainActivity extends AppCompatActivity {
         Log.i("OnScanResultTag", "\n **** Characteristics of  service  " + bluetoothGattService.getUuid() + " *****");
 
         for (BluetoothGattCharacteristic Characteris : bluetoothGattService.getCharacteristics()) {
-            Log.e("OnScanResultTag", " **** Characteris  =>  property = " + Characteris.getProperties()
+
+
+            String charcLog = " **** Characteris  =>  property = " + StringHelpers.fromDecimalToBinary(Characteris.getProperties())
                     + " getPermissions = " + Characteris.getPermissions()
                     + " getWriteType = " + Characteris.getWriteType()
-                    + " getValue = " + Characteris.getValue());
+                    + " getValue = " + Characteris.getValue() ;
+            Log.e("OnScanResultTag", charcLog);
+            appendTv(charcLog);
             displayDescriptors(Characteris);
             break;
         }
@@ -357,21 +378,42 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayCharacteristic(BluetoothGattCharacteristic Characteris) {
         Log.i("OnScanResultTag", "\n **** Display  Characteristics  " + Characteris.getUuid() + " *****");
-        Log.e("OnScanResultTag", " **** property = " + Characteris.getProperties()
-                + " **** value = " + Arrays.toString(Characteris.getValue())
-                + " getPermissions = " + Characteris.getPermissions());
+        Log.e("OnScanResultTag", "**** property = " + Characteris.getProperties()
+                + "**** value = " + Arrays.toString(Characteris.getValue())
+                + "**** getPermissions = " + Characteris.getPermissions());
 
+        String log = "\n**** Display  Characteristics: uuid = " + Characteris.getUuid() + " *****"
+                +" \n**** property = " +  StringHelpers.fromDecimalToBinary(Characteris.getProperties())
+                + "\n**** value = " + Arrays.toString(Characteris.getValue())
+                + "\n**** getPermissions = " + Characteris.getPermissions() ;
+        appendTv(log);
         displayDescriptors(Characteris);
     }
 
     private void displayDescriptor(BluetoothGattDescriptor descriptor) {
-        Log.i("OnScanResultTag", "\n **** displayDescriptor  " + descriptor.getUuid() + " *****");
+        Log.i("OnScanResultTag", "\n**** DisplayDescriptor: uuid = " + descriptor.getUuid() + " *****");
         Log.i("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
                 + ",  value = " + Arrays.toString(descriptor.getValue()));
         String hexStringValue = StringHelpers.bytesToHex(descriptor.getValue());
+
+
         Log.e("OnScanResultTag", " **** descriptor  ***** =>  uuid  = " + descriptor.getUuid()
                 + ",  value = " + hexStringValue);
 
+        String log = "\n**** Display Descriptor: uuid = " + descriptor.getUuid() + " *****"
+                +"\n**** value bytes = "+Arrays.toString(descriptor.getValue())
+                +"\n**** hexStringValue "+hexStringValue ;
+        appendTv(log);
+
+    }
+
+    private void appendTv(final String text){
+        peripheralTextView.post(new Runnable() {
+            @Override
+            public void run() {
+                peripheralTextView.append(text+ "\n");
+            }
+        }) ;
     }
 
 
